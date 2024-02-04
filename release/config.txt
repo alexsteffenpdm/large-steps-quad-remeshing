@@ -1,0 +1,4 @@
+save_path=output
+iterations=500
+step_size=3e-2
+lambda=19

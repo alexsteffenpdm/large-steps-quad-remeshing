@@ -1,0 +1,1 @@
+This is a mirror of the personal computer graphics project from the summer semester 2022.

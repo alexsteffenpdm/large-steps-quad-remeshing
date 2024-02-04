@@ -1,0 +1,385 @@
+<!doctype html><html class="no-js"><head><meta charset="utf-8"><title>Large Steps in Inverse Rendering - Quad Remeshing</title><meta name="description" content=""><meta name="viewport" content="width=device-width">
+<!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+<link href="http://fonts.googleapis.com/css?family=Raleway:300,400,600" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="style.css">
+        <script type="text/javascript" async
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <!--<link rel="stylesheet" href="styles/main.37ab405b.css">-->
+<body>
+<!--[if lt IE 7]>
+<p class="browsehappy">You are using an 
+    <strong>outdated</strong> browser. Please 
+    <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.
+</p>
+<![endif]-->
+<div class="container">
+
+    <nav class="navbar">
+        <div class="container">
+            <ul class="navbar-list">
+                <li class="navbar-item">
+                    <a class="navbar-link" href="#intro">Introduction & Basics</a>
+                </li>
+                <li class="navbar-item">
+                    <a class="navbar-link" href="#algo">Algorithm & Quad-Approach</a>
+                </li>
+                <li class="navbar-item">
+                    <a class="navbar-link" href="#results">Results</a>
+                </li>
+                <li class="navbar-item">
+                    <a class="navbar-link" href="#retro">Retrospective & Improvements</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="header" id="intro">
+        <h2 class="title">Large Steps in Inverse Rendering - Quad Remeshing</h2>
+        <h6>Project by Alexander Steffen (<a href="mailto:asteffen@campus.tu-berlin.de">asteffen@campus.tu-berlin.de</a>)
+        </h6>
+
+        <div class="row">
+                <img class="u-max-full-width" src="images/teaser_suzanne_final.png">
+                    <p>
+                        With an ever increasing digitalization of the world, the demand for vizualization and therefore the need for better, more sophisticated representations and their corresponding techniques is growing constantly. 
+                        
+                    </p>
+        </div>
+        <div class="row">
+            <div class="u-max-full-width" style="text-align: left;">
+
+            <h3 class="section-heading">Basics</h3>    
+            <p class="section-description">
+                This section focuses on presenting the basic knowledge needed in order to properly understand what the project is about and how its different components need to be understood to grasp the importance and relations of every single component.
+                Further basic knowledge about graph theory, algebra and Python imply the prerequesits for the topics presented in this section. 
+            </p>
+            <h5 class="section-heading">Meshes</h5>    
+            <p class="section-description">
+               An arbitrary <b>mesh</b>, or more precise an arbitrary <b>polygon mesh</b>, can formally be described as<br>
+               \(G := (V,E,F)\) where \(G\) is a graph with:
+               <ul>
+                   <li>\(V \in G\) is the set vertices </li>
+                   <li>\(E \in G\) is the set of edges with \(|e| = 2\) for all \(e \in E\)</li>
+                   <li>\(F \in G\) is the set of faces with \(\forall f \in F\) describing \(V' \subset V\) </li>
+               </ul>
+               or in wording:<br>
+               A mesh is a set of points in \(\mathbb{R}^3\), also called vertices, which are pairwise connected to each other by a straight line, also called edge, and each enclosed area created by a certain subset of edges, which are called faces.
+               
+                
+            </p>
+            <h6 class="section-heading"><b>Quadrilateral and quad-dominant Meshes</b></h6>    
+            <p class="section-description">
+                A <b>quadrilateral</b> mesh is a mesh where every  of its faces consists of exactly four vertices that describe a circle. Formally:<br><br>
+                Let \(\sigma\) be a signature and \(\mathcal{M}\) a \(\sigma\)-structure with \(\sigma = \{rel,func,const\}\) with:
+                <ul>
+                    <li>\(rel\) is the set relational symbols and \(rel = \{E,F\}\) with \(ar(E) = 2\) and \(ar(F) = 4\)</li>
+                    <li>\(func\) is the set of funcional symbols and \(func = \{ind\}\) with \(i: V \rightarrow \mathbb{N}\)</li>
+                    <li>\(const\) is the set of constants with \(const = \emptyset\)</li>
+                </ul>        
+                whilst the universe of  \(\mathcal{M}\) being denoted by \(M = \{V(G),E(G)\}\). Furthermore let \(\phi,\psi,\delta \in FO[\sigma] \) with:
+                <ul>
+                    <li>\(\phi(x) := \exists y\exists z\exists w( E(x,y) \wedge E(y,z) \wedge E(z,w) \wedge E(w,x) \wedge \neg E(x,z) \wedge \neg E(y,z))\)</li>
+                    <li>\(\psi(x) := \exists y\exists z\exists (x \neq y \wedge x \neq z \wedge x \neq w \wedge y \neq z \wedge y \neq w \wedge z \neq w) \)</li>
+                    <li>\(\delta := \forall x(\phi(x) \wedge \psi(x)) \)</li>
+                </ul>
+                then, if \(\mathcal{M} \models \delta\), the mesh that gets described by \(\mathcal{M}\) is a quadrilateral mesh.<br><br>
+                As it can be observed, a quadrilateral mesh has very strict boundaries. Often a mesh cannot be created or modeled in such a way that it would fulfill the requirements for a quadrilateral mesh. Especially organic shapes are often too detailed
+                and too diverse to only consist of quad-faces. Some compromises have to be made here in order to model the curvature of an object and transfer it into a digital mesh. Therefore, artists (and algorithms) use faces that consist of more or less than four vertices when it is needed.
+                Since the performance in terms of rendering, animating and manipulating of a given mesh is still the main aspect for optimizations, the inducted information provided by a mesh needs to be as minimal and evenly distributed as possible. Obviously, there exists an evergrowing demand
+                for highly performant organic and anorganic meshes, that are as close to reality as possible, within different industries. As described earlier, deriving organic meshes from reality is tricky and therefore the common practice is to optimize meshes in a way that they consist of
+                quad faces and only when certain quad faces would lead to distortions and other phenomena, they will be substituted by non-quad faces. These meshes are called <b>quad-dominant</b> meshes.<br><br>
+
+                <i>Note: for the rest of the documentation the expression <b>quad meshes</b> will be used, which means there is no distinction whether a quad-dominat or a quadrilateral mesh is meant, because determing which one is used evolves arround too many disticions to be practiable and also relies on the specific use case.</i>
+            </p>
+            <h5 class="section-heading">Renderer</h5>
+                <p class="section-description">
+                    A <b>renderer</b> is a program that converts the information held by an arbitrary mesh into a visual representation of given the data based on an arbitrary viewing angle and makes the generated output displayable on a screen (e.g. monitor, TV etc.).
+                    Obviously, a mesh just consists of dots and lines that cannot be displayed properly. Therefore, an integral part of the renderer is something called shader. A <b>shader</b> basically uses the information provided to it and calculates a hull based on
+                    a variety of functions, which include, but are not limited to color, illumnation and shape. 
+                </p>
+            <h5 class="section-heading">Differentiable Renderer</h5>   
+                <p class="section-description">
+                    In general, a <b>differentiable renderer</b> behaves no different compared to a <i>usual</i> renderer, but there exists a slight, but therefore even more important difference between them. A <i>usual</i> renderer will output an image. From that image it is not possible, to derive
+                    the exact calculations being made and therefore data that led to the generated image. Of course, there are several algorithms and/or tools (like Meshroom) that can generate a mesh or even multiple meshes from a given image, but the derived data from these algorithms and tools will be
+                    an approximation of the data which was used to generate the image beforehand. Hence, there is no gurantee that a mesh would be reconstructed the exact same way that the arbitrary input mesh of the renderer has been constructed prior. However, a <b>differentiable renderer</b> will
+                    generate an image from given data and can "explicitly [model] the relationship between changes in model parameters and image observations"<a href="#4"> [4]</a>. 
+                </p>
+                
+
+        </div>
+    </section>
+    <div class="docs-section" id="algo">
+        <h3 class="section-heading">Algorithm</h3>
+        <p class="section-description">
+            This section will present the algorithm proposed by the paper <a href="#1">[1]</a> on which the project is based. But rather than providing the mathematical aspect of the algorithm, the section will focus on the implementation based on the project. 
+            Still, it is highly advised to read through the paper in order to fully grasp what has been done. 
+        </p>
+        <h5 class="section-heading">Prequesits</h5>
+        <p class="section-description">
+            The following software listed represents the most integral part used to implement this project, which includes, but is not limited to:<br><br>
+
+            <b>Language:</b> Python3<br>
+            <b>Differentiable Renderer:</b> NVdiffRast <a href="#2">[2]</a><br>
+            <b>External Libraries/Tools:</b> CUDA-Toolkit <a href="#3">[3]</a>, scikit-sparse <a href="#5">[5]</a> <br>
+        </p>
+        <h5 class="section-heading">Implementation</h5>
+        <p class="section-description">
+            This section will provide a general overview of the most important steps being made in the implementation and therefore will act as a guidance through the project whilst only describing specific details in a way, that the prequesited knowledge and the information provided in the <a href="#intro">"Basics"</a> section
+            will suffice for a general understanding of what was implemented. <br>
+            <br>
+            <i>Note: The upcoming content is divided into sections. These sections refer to the comments <a href="">here</a>. It is advised to read this part of the documention in parallel with the code provided by the link.</i>
+        </p>
+       
+
+            <b>SETUP</b><br>
+           
+                Firstoff, the <code>scene-params</code> will be loaded with <code>load_scene(filepath)</code>. Here, <code>filepath</code> is the absolute path to the parent of the current working directory.
+                Afterwards, needed variables will be set, each containing a subset of the <code>scene-params</code>.
+                <pre class="line-numbers">
+                    <code class="language-python">filepath = os.path.join(os.getcwd(), "scenes","suzanne","suzanne.xml")
+scene_params = load_scene(filepath)
+
+v_ref = scene_params["mesh-target"]["vertices"]
+n_ref = scene_params["mesh-target"]["normals"]
+f_ref = scene_params["mesh-target"]["faces"]
+
+v = scene_params["mesh-source"]["vertices"]
+f = scene_params["mesh-source"]["faces"]</code></pre>           
+                
+                Since Pytorch is used and all set variables are Pytorch-Tensors they need be placed within the memory as a <i>cohesive</i> block. Hence, checking the cohesion <code>.is_contiguous()</code>, and if needed fixing the cohesion, is just a precautionous measure here.<br><br>            
+            <b>RENDER</b><br>
+                After the setup is done, the <code>renderer</code> object is ready to use. As stated in the prequistes of this section, the NVdiffRast is used. 
+            <pre class="line-numbers">
+                <code class="language-python">renderer = NVDRenderer(scene_params,shading=True,boost=3)
+imgs = renderer.render(v_ref,n_ref,f_ref)</code></pre>
+                The object initialized here is setup in such way, that for each viewpoint from which the object of interest (e.g. a mesh) is looked at, one camera (defined in by the parameters of the XML-file) is generated and will not get changed while runtime. Afterwards, the reference images will be
+                rendered in a differentiable way and stored in <code>ref_imgs</code>. Later on, this will allow for changing the source that will be transformed towards the reference object while runtime.<br><br>
+            <b>PARAMETRIZE</b><br>
+                The parametrization step is the single most important part of the algorithm. Here, crucial parameters are set that will determine the output of the algorithm and cannot be changed while runtime. These parameters are:
+                <ul>
+                    <li><code>steps</code>: Is equivalent to iterations done in a loop. Obviously the larger this number is, the more </li>
+                    <li><code>step_size</code>: This is probably the most influencing part of the parameters. It determines how steep the changes between each step will/can be and therefore how fast the source mesh will transform towards the target mesh.</li>
+                    <li><code>lambda_</code>: As the provided algorithm by the paper is the solution for an optimization problem, this parameter acts as a "balancer" between both parts of the optimization. The first part being the regularization term and the second being the gradient descent. Large values will prioritize the regularization term.</li>
+                </ul> 
+            <pre class="line-numbers">
+                <code class="language-python">cfg_params = read_cfg()
+save_path = cfg_params[0]
+iterations = int(cfg_params[1])
+step_size = float(cfg_params[2])
+lambda_= int(cfg_params[3])
+M = system_matrix(v,f,lambda_)
+u = to_differential(M,v)
+u.requires_grad = True
+opt = AdamUniform([u],step_size)
+
+v_steps = torch.zeros((steps+1,*v.shape),device='cuda')
+losses = torch.zeros(steps+1,device='cuda')
+                </code></pre>
+                After setting each value for the critical variables, the system matrix \(M\) will be computed. Or simply \(M\) is computed by multiplying the identity matrix sized to match the amount of vertices with the discrete Laplacians <a href="#1">[1]</a>.
+                In order to get the differential parametrization of the mesh, <code>u</code> gets computed as the matrix multiplication of \(M\) and the matrix inducted by the array of vertices of the mesh to be transformed. With setting <code>u.requires_grad</code> to <i>true</i>, Pytorch is told that gradients need to be computed.
+                Since gradients are an essential component of the method proposed by the paper and the problem that needs to be solved is an optimization problem, an optimizer is used that can properly work with gradients. Here, the authors chose a slightly modified ADAM-Optimizer, which will "observe" every iteration
+                and improves the result gradually each operation.
+
+                Initializing <code>v_steps</code> and <code>losses</code> as placeholders with space for each iteration to come marks the end of the parametrization step.
+                <br><br><b>OPTIMIZE</b><br>
+                Since everything has been properly set up beforehand, the optimization step of the algorithm is a pretty straight forward process, which can be summed up as follows:
+                <ol>
+                    <li>retrieve vertices from their differentinal parametrization</li>
+                    <li>compute the face normals in a way that they all point "outside" the mesh</li>
+                    <li>compute the corresponding vertex normals</li>
+                    <li>render images from the current state</li>
+                    <li>compute the average loss</li>
+                    <li>record the optimization state (optionally)</li>
+                    <li>backpropagate the changes and losses</li>
+                </ol>
+                Obviously, the mentioned steps for the optimization need to be repeated <code>steps</code>-times.
+            <pre class="line-numbers">
+                <code class="language-python">
+for i in trange(0,iterations):
+    v = from_differential(M,u)
+    f_normals = face_normals(v,f)
+    v_normals = vertex_normals(v,f,f_normals)
+
+    #f_quad, f_tri = tris_to_quads(f)
+    #new_imgs = renderer.render(v,v_normals,f_quad,f_tri)
+
+    new_imgs = renderer.render(v,v_normals,f)
+    loss = (new_imgs - imgs).abs().mean()
+
+    #f_old = tris_to_quads(f_quad)
+    #f = torch.cat(f_tri,f_old) 
+
+    with torch.no_grad():
+        losses[i] = loss
+        v_its[i] = v
+    
+    opt.zero_grad()
+    loss.backward()
+    opt.step()
+
+with torch.no_grad():
+    opt_imgs = renderer.render(v,n,f)
+    loss = (opt_imgs - ref_imgs).abs().mean()
+    losses[-1] = loss
+    v_steps[-1] = v
+                </code></pre><br>
+            <b>OUTPUT</b><br>
+
+        </p>
+    <h3 class="section-heading">Approach on Quads</h3>
+    <p class="section-description">
+        Probably by now, the question <b><i>"Where are the quads?"</i></b> has arised. While the <a href="#algo">"Algorithm"</a> section was there to provide a quick overview about the method that has been proposed, this section will point out, where and when quads will be used.
+        Until now, it was stated what the expected result is, but it has not been touched on where to actually start. Well, since the renderer used in this project is not able to render quads, triangles have to suffice and need to be transformed
+        in each iteration step to get the result that is as close a possible compared towards rendering the mesh as a quad mesh. <br>
+        <h5 class="section-heading">Suzanne</h5>
+            <p class="section-description">
+                Even though, the paper provides a well-sized amount of examples, the project was just tested with the well-known mesh "Suzanne", sometimes also referred as "the Blender Monkey", will have to suffice as a prove of concept. She was chosen due to granting
+                a wide range of assets that need to be tested which include, but are not limited to, and are in no particular order:
+               
+                        <ul>
+                            <li>convex and concave shapes</li>
+                            <li>detailed and generic forms</li>
+                            <li>narrow and wide section transitions</li>
+                            <li>organic shape</li>
+                            <li>reconstruction through a sphere</li>
+                        </ul>
+                
+                For now, the last point mentionend in the list above will be elaborated on. The reconstruction or rather the inverse rendering of geometry needs a generic shape as a starting point and there is no three-dimensional shape that is more generic than a sphere.
+                Hence, the best results can be expected with the use of a sphere. But a sphere can get modeled in a variety of ways. Each of them will provide a sphere with different behaviors or characteristics.
+            </p>
+        <h5 class="section-heading">The "optimal" sphere</h5>
+            <p class="section-description">
+                As mentioned above, a sphere can be created in a lot of different ways. In order to get the best result possible, the sphere used to recreate Suzanne must fulfill critera (at least to a certain extent):
+                <ul>
+                    <li>Since basically two transformations will be performed, on each iteration a sphere that can be transformed to a <b>quadrilateral</b> sphere and back would be optimal.</li>
+                    <li>The selected sphere should provide enough freedom on the mesh to manipulate the vertices positions and relations.</li>
+                    <li>Vertices should be equally distributed since this will grant a better result.</li>
+                    <li>Distorsions within the reconstructed mesh should not be created by the selected sphere.</li>
+                </ul>
+                Since performance will eventually be key at some point, maybe a UV-sphere will work well, since it fulfills the first three critera. The fourth can just be inspected when there are actual results.<br>
+                <div align="center">
+                      <img src="images/spheres/uv_sphere/quadded.png"  width="250" height="250">
+                      <img src="images/spheres/uv_sphere/triangulated.png" width="250" height="250"><br>
+                      UV-Sphere quadded &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; UV-Sphere triangulated
+                </div><br><br>
+                Another way would be a so called "volleyball-sphere":
+                <div align="center">
+                    <img src="images/spheres/volleyball_sphere/quadded.png"  width="250" height="250">
+                    <img src="images/spheres/volleyball_sphere/triangulated.png" width="250" height="250"><br>
+                    Volleyball-Sphere quadded &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Volleyball-Sphere triangulated
+                </div><br><br>
+                The last inspected sphere was a sphere derived from an icosahedron, also known as "Ico-Sphere": 
+                <div align="center">
+                    <img src="images/spheres/ico_sphere/quadded_resized.png"  width="250" height="250">
+                    <img src="images/spheres/ico_sphere/triangulated_resized.png" width="250" height="250"><br>
+                    Ico-Sphere quadded &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Ico-Sphere triangulated
+                </div>
+            </p>
+        <h5 class="section-heading">Transformation between Quads and Triangles</h5>
+        In terms of this project, a naive approach was chosen in order to transform triangles to quads and quads  to triangles:<br>
+        <pre class="line-numbers">
+            <code class="language-python">def get_corresponding(v0,v2,faces,converted):
+    for i in range(faces.shape[0]):
+        if faces[i,0]== v0 and faces[i,1]==v2 and converted[i] == False:
+            return i
+    return -1
+
+
+def triangles_to_quads(faces): 
+    quads = []
+    faces = faces.cpu().numpy()
+    
+    converted = np.full(faces.shape[0],False)
+    for i in trange(faces.shape[0]):
+        if converted[i] == False:
+            v0 = faces[i,0]
+            v1 = faces[i,1]
+            v2 = faces[i,2]
+            corr_index = get_corresponding(v0,v2,faces,converted)
+            if corr_index != -1:
+                v3 = faces[corr_index][2]
+                quad = [v0,v1,v2,v3]
+                converted[i] = True
+                converted[corr_index] = True
+                quads.append(quad)   
+    leftovers = []
+    for i,c in enumerate(converted):
+        if c == False:
+            leftovers.append(faces[i])</code></pre>
+            <pre class="line-numbers">
+                <code class="language-python">def quads_to_triangles(faces):
+    triangles = []
+    for f in faces:
+        t1 = [f[0],f[1],f[2]].cpu().numpy()
+        t2 = [f[0],f[2],f[3]].cpu().numpy()
+        triangles.append(t1)
+        triangles.append(t2)
+    return torch.from_numpy(np.asarray(triangles))</code></pre>
+        </p>
+
+    </div>
+    <div class="docs-section" id="results">
+        <h3 class="section-heading">Results</h3>
+        <h5 class="section-heading">Development - Results</h3>
+            Here a few development results. These development results where derived from a UV-Sphere. 
+            <div class="u-u-max-full-width"><img src="images/development/wireframe_25_500.png" width="100%" height="100%"></div>
+            Params:<br> ~ 25% resolution, 500 iterations
+            <div class="u-u-max-full-width"><img src="images/development/wireframe_50_2500.png" width="100%" height="100%"></div>
+            Params:<br> ~ 50% resolution, 2500 iterations
+            <div class="u-u-max-full-width"><img src="images/development/wireframe_100_7500.png" width="100%" height="100%"></div>
+            Params:<br> ~ 100% resolution, 7500 iterations
+            <p class="section-description">
+                As observable the meshes generated with the use of a UV-Sphere have a distortions. This comes from the poles that the UV-sphere has and which do not leave enough freedom for the mesh to deform while runtime.
+                Some similar observations where made with the volleyball-sphere, but there the phenomenon was around sharp edges, where the relation between vertices and their respective edges lead to distortions.
+            </p>
+
+        <h5 class="section-heading">Final Result</h3>
+            This is the final result derived from an Ico-Sphere and has been quad transformed.
+            <div class="u-u-max-full-width"><img src="images/suzanne_final.png" width="100%" height="100%"></div>
+            Params:<br> ~ 100% resolution, 500 iterations
+            <p class="section-description">
+                Obviously, the result with the Ico-Sphere is much cleaner, which after observing it, is quite clear, since the ico-sphere has the best equidistant distribution of vertices and edge directions.
+            </p>
+            
+    </div>
+    <div class="docs-section" id="retro">
+        <h3 class="section-heading">Retrospective & Improvements</h3>
+            Obviously, a few mistakes have been made as this project was a proof of concept following the mistakes are listes and possible solutions proposed:<br>
+            <ul>
+                <li><b>renderer only renders triangles</b><br>
+                    In order to properly get the losses and improve the result the renderer should have been converted in such a way that it can render triangles and quads.
+                </li>
+                <li><b>selection of generic base meshes</b><br>
+                    Due to the low testing with different models, the inducted time pressure of this project and that a specific generic bash mesh is needed for each resembled target mesh. A better testing set will improve the outcome of this project.
+                </li>
+            </ul>
+
+        </p>
+      
+
+    </div>
+
+   
+    <div class="docs-section" id="references">
+        <h3 class="section-heading">References</h3>
+        <ul class="popover-list">
+            <li class="popover-item" id="1">
+                [1] B. Nicolet, A. Jacobson, W. Jakob, <a href="https://rgl.epfl.ch/publications/Nicolet2021Large"> <i>Large Steps in Inverse Rendering of Geometry</a>, 2021</i>
+            </li>
+            <li class="popover-item" id="2">
+                [2] NVidia, <a href="https://github.com/NVlabs/nvdiffrast"><i>NVDiffRast</i></a>, last retrieved 31-03-2022
+            </li>
+            <li class="popover-item" id="3">
+                [3] NVidia, <a href="https://developer.nvidia.com/cuda-toolkit"><i>NVidia Cuda CUDA-Toolkit</i></a>, last retrieved 31-03-2022
+            </li>
+            <li class="popover-item" id="4">
+                [4] OpenDR, <a href="https://towardsdatascience.com/differentiable-rendering-d00a4b0f14be">https://towardsdatascience.com/differentiable-rendering-d00a4b0f14be</a>, last retrieved 31-03-2022
+            </li>
+            <li class="popover-item" id="5">
+                [4] SuiteSparse, <a href="https://people.engr.tamu.edu/davis/suitesparse.html">SuiteSparse CHOLMOD</a>, last retrieved 31-03-2022
+            </li>
+        </ul>
+    </div>
+
+</div>
+
